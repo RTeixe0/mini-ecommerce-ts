@@ -6,7 +6,7 @@ Simulador de carrinho de compras em Node.js + TypeScript, rodando no terminal.
 - Listar produtos
 - Adicionar/remover do carrinho
 - Ver total da compra
-- (em breve) Cupom de desconto, cliente, e mais...
+
 
 ## Como rodar
 ```bash

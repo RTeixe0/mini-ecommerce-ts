@@ -1,14 +1,23 @@
 import promptSync from 'prompt-sync'
 const prompt = promptSync()
 
-// 1. Interface do Produto
+interface Cupom {
+    codigo: string
+    tipo: 'porcentagem' | 'fixo'
+    valor: number
+  }
+  
 interface Produto {
   id: number
   nome: string
   preco: number
 }
 
-// 2. Lista de produtos disponíveis (pode crescer depois!)
+const cupons: Cupom[] = [
+    { codigo: 'DESC10', tipo: 'fixo', valor: 10 },
+    { codigo: 'PROMO15', tipo: 'porcentagem', valor: 15 }
+  ]  
+
 const produtos: Produto[] = [
   { id: 1, nome: 'Letra 3D A', preco: 15.00 },
   { id: 2, nome: 'Letra 3D B', preco: 17.50 },
@@ -16,10 +25,10 @@ const produtos: Produto[] = [
   { id: 4, nome: 'Letra com LED', preco: 35.00 }
 ]
 
-// 3. Carrinho (produtos que o usuário vai adicionando)
 let carrinho: Produto[] = []
+let cupomAplicado: Cupom | null = null
 
-// 4. Função para listar os produtos
+
 function listarProdutos(): void {
   console.log('\n🛍️ Produtos disponíveis:')
   produtos.forEach(p => {
@@ -27,7 +36,6 @@ function listarProdutos(): void {
   })
 }
 
-// 5. Adicionar produto ao carrinho
 function adicionarAoCarrinho(id: number): void {
   const produto = produtos.find(p => p.id === id)
   if (produto) {
@@ -38,24 +46,39 @@ function adicionarAoCarrinho(id: number): void {
   }
 }
 
-// 6. Ver carrinho e total
 function verCarrinho(): void {
-  console.log('\n🛒 Seu carrinho:')
-  if (carrinho.length === 0) {
-    console.log('Carrinho vazio.')
-    return
+    console.log('\n🛒 Seu carrinho:')
+    if (carrinho.length === 0) {
+      console.log('Carrinho vazio.')
+      return
+    }
+  
+    let subtotal = 0
+    carrinho.forEach(p => {
+      console.log(`- ${p.nome} - R$ ${p.preco.toFixed(2)}`)
+      subtotal += p.preco
+    })
+  
+    console.log(`🧾 Subtotal: R$ ${subtotal.toFixed(2)}`)
+  
+    if (cupomAplicado) {
+      let desconto = 0
+  
+      if (cupomAplicado.tipo === 'fixo') {
+        desconto = cupomAplicado.valor
+      } else if (cupomAplicado.tipo === 'porcentagem') {
+        desconto = subtotal * (cupomAplicado.valor / 100)
+      }
+  
+      const total = subtotal - desconto
+      console.log(`🎁 Desconto (${cupomAplicado.codigo}): -R$ ${desconto.toFixed(2)}`)
+      console.log(`💰 Total com desconto: R$ ${total.toFixed(2)}`)
+    } else {
+      console.log(`💰 Total: R$ ${subtotal.toFixed(2)}`)
+    }
   }
+  
 
-  let total = 0
-  carrinho.forEach(p => {
-    console.log(`- ${p.nome} - R$ ${p.preco.toFixed(2)}`)
-    total += p.preco
-  })
-
-  console.log(`💰 Total: R$ ${total.toFixed(2)}`)
-}
-
-// 7. Remover do carrinho
 function removerDoCarrinho(id: number): void {
     const index = carrinho.findIndex(p => p.id === id)
   
@@ -66,9 +89,21 @@ function removerDoCarrinho(id: number): void {
       console.log('❌ Produto não encontrado no carrinho.')
     }
   }
+
+  function aplicarCupom(codigo: string): void {
+    const cupom = cupons.find(c => c.codigo === codigo.toUpperCase())
+  
+    if (!cupom) {
+      console.log('❌ Cupom inválido.')
+      return
+    }
+  
+    cupomAplicado = cupom
+    console.log(`🎉 Cupom "${cupom.codigo}" aplicado com sucesso!`)
+  }
+  
   
 
-// 8. Menu interativo
 function menu(): void {
     while (true) {
       console.log('\n=== MINI E-COMMERCE ===')
@@ -76,6 +111,7 @@ function menu(): void {
       console.log('(2) Adicionar produto ao carrinho')
       console.log('(3) Ver carrinho')
       console.log('(4) Remover produto do carrinho')
+      console.log('(5) Aplicar cupom de desconto')
       console.log('(0) Finalizar e sair')
   
       const opcao = prompt('Escolha uma opção: ')
@@ -95,7 +131,10 @@ function menu(): void {
         verCarrinho()
         const id = parseInt(prompt('Digite o ID do produto que deseja remover: '))
         removerDoCarrinho(id)
-      } else if (opcao === '0') {
+      } else if (opcao === '5') {
+        const codigo = prompt('Digite o código do cupom: ')
+        aplicarCupom(codigo)
+      }else if (opcao === '0') {
         console.log('🛒 Obrigado pela visita! Finalizando compra...')
         verCarrinho()
         break
