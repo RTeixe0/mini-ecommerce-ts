@@ -1,3 +1,4 @@
+import fs from 'fs'
 import promptSync from 'prompt-sync'
 const prompt = promptSync()
 
@@ -13,6 +14,15 @@ interface Produto {
   preco: number
 }
 
+interface Pedido {
+    cliente: string
+    produtos: Produto[]
+    total: number
+    cupom?: Cupom
+    data: string
+  }
+
+  
 const cupons: Cupom[] = [
     { codigo: 'DESC10', tipo: 'fixo', valor: 10 },
     { codigo: 'PROMO15', tipo: 'porcentagem', valor: 15 }
@@ -102,7 +112,53 @@ function removerDoCarrinho(id: number): void {
     console.log(`🎉 Cupom "${cupom.codigo}" aplicado com sucesso!`)
   }
   
+  function finalizarCompra(): void {
+    if (carrinho.length === 0) {
+      console.log('❌ Carrinho vazio. Não é possível finalizar a compra.')
+      return
+    }
   
+    const cliente = prompt('Digite seu nome para finalizar o pedido: ')
+    if (!cliente) {
+      console.log('❌ Nome inválido.')
+      return
+    }
+  
+    let subtotal = carrinho.reduce((acc, p) => acc + p.preco, 0)
+    let desconto = 0
+  
+    if (cupomAplicado) {
+      if (cupomAplicado.tipo === 'fixo') {
+        desconto = cupomAplicado.valor
+      } else if (cupomAplicado.tipo === 'porcentagem') {
+        desconto = subtotal * (cupomAplicado.valor / 100)
+      }
+    }
+  
+    const total = subtotal - desconto
+    const data = new Date().toISOString()
+  
+    const pedido: Pedido = {
+      cliente,
+      produtos: [...carrinho],
+      total,
+      cupom: cupomAplicado || undefined,
+      data
+    }
+  
+    // Cria um nome de arquivo único com timestamp
+    const nomeArquivo = `pedido-${Date.now()}.json`
+  
+    fs.writeFileSync(`./pedidos/${nomeArquivo}`, JSON.stringify(pedido, null, 2))
+  
+    console.log(`📦 Pedido salvo com sucesso em pedidos/${nomeArquivo}`)
+    console.log(`💰 Total da compra: R$ ${total.toFixed(2)}`)
+  
+    // Limpa carrinho e cupom
+    carrinho = []
+    cupomAplicado = null
+  }
+
 
 function menu(): void {
     while (true) {
@@ -135,13 +191,13 @@ function menu(): void {
         const codigo = prompt('Digite o código do cupom: ')
         aplicarCupom(codigo)
       }else if (opcao === '0') {
+        finalizarCompra()
         console.log('🛒 Obrigado pela visita! Finalizando compra...')
-        verCarrinho()
         break
       } else {
         console.log('Opção inválida.')
       }
     }
   }
-  
-menu()
+    
+  menu()
